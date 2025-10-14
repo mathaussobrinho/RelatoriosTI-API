@@ -1,5 +1,5 @@
 # Etapa de build
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /app
 
 # Copia tudo para dentro do container
@@ -12,7 +12,7 @@ RUN dotnet restore
 RUN dotnet publish -c Release -o out
 
 # Etapa de execução
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
 COPY --from=build /app/out .
 
@@ -21,3 +21,4 @@ ENV ASPNETCORE_URLS=http://+:${PORT}
 EXPOSE 8080
 
 ENTRYPOINT ["dotnet", "RelatoriosTI.API.dll"]
+
