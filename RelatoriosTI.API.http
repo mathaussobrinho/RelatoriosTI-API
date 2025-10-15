@@ -1,6 +1,4 @@
-@RelatoriosTI.API_HostAddress = http://localhost:5128
+@RelatoriosTI.API_HostAddress = https://relatoriosti-api-production.up.railway.app
 
 GET {{RelatoriosTI.API_HostAddress}}/weatherforecast/
 Accept: application/json
-
-###
