@@ -11,13 +11,13 @@ builder.Services.AddSwaggerGen();
 // Configure CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", builder =>
+    options.AddPolicy("AllowAll", corsBuilder =>
     {
-        builder
+        corsBuilder
             .WithOrigins("https://funipro.shop", "http://localhost:3000")
             .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials();
+            .AllowAnyHeader();
+            // Remova .AllowCredentials() se não estiver usando autenticação por cookie!
     });
 });
 
@@ -34,7 +34,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Importante: UseCors deve vir ANTES de UseAuthorization
+// UseCors deve vir antes de UseAuthorization
 app.UseCors("AllowAll");
 
 app.UseHttpsRedirection();
