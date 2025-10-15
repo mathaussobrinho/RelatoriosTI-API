@@ -5,7 +5,7 @@ using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configurar porta do Railway
+// Configurar porta
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
@@ -19,7 +19,7 @@ builder.Services.AddSwaggerGen();
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
     ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
-Console.WriteLine($"Configurando banco de dados...");
+Console.WriteLine("Configurando banco de dados...");
 
 if (connectionString?.StartsWith("postgresql://") == true)
 {
@@ -33,18 +33,26 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<PdfService>();
 
-// CORS
-builder.Services.AddCors();
-
 var app = builder.Build();
 
 Console.WriteLine("Aplicação iniciada!");
 
-// CORS
-app.UseCors(policy => 
-    policy.AllowAnyOrigin()
-          .AllowAnyMethod()
-          .AllowAnyHeader());
+// ===== MIDDLEWARE CORS MANUAL - DEVE VIR PRIMEIRO =====
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+    context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    
+    if (context.Request.Method == "OPTIONS")
+    {
+        context.Response.StatusCode = 200;
+        await context.Response.CompleteAsync();
+        return;
+    }
+    
+    await next();
+});
 
 // Aplicar migrations
 Console.WriteLine("Aplicando migrations...");
@@ -68,7 +76,7 @@ app.UseSwaggerUI();
 app.UseAuthorization();
 app.MapControllers();
 
-// Health check endpoint
+// Health check
 app.MapGet("/", () => "API está rodando! Acesse /swagger");
 app.MapGet("/health", () => "OK");
 
