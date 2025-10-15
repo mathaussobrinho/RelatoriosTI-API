@@ -18,7 +18,8 @@ var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
 if (connectionString?.StartsWith("postgresql://") == true)
 {
     var uri = new Uri(connectionString);
-    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.Trim('/')};Username={uri.UserInfo.Split(':')[0]};Password={uri.UserInfo.Split(':')[1]};SSL Mode=Require;Trust Server Certificate=true";
+    var userInfo = uri.UserInfo.Split(':');
+    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.Trim('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
 }
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -26,20 +27,18 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<PdfService>();
 
-// CORS CORRIGIDO - ORDEM IMPORTA!
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
-});
+// CORS
+builder.Services.AddCors();
 
 var app = builder.Build();
 
-// Aplicar migrations automaticamente
+// CORS - Deve vir PRIMEIRO!
+app.UseCors(policy => 
+    policy.AllowAnyOrigin()
+          .AllowAnyMethod()
+          .AllowAnyHeader());
+
+// Aplicar migrations
 using (var scope = app.Services.CreateScope())
 {
     try
@@ -53,14 +52,8 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// IMPORTANTE: UseCors ANTES de UseAuthorization!
-app.UseCors("AllowAll");
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseAuthorization();
 app.MapControllers();
