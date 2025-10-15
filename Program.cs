@@ -1,50 +1,67 @@
 using Microsoft.EntityFrameworkCore;
 using RelatoriosTI.API.Data;
+using RelatoriosTI.API.Services;
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
+QuestPDF.Settings.License = LicenseType.Community;
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Configure CORS
+// Connection String
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
+    ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
+if (connectionString?.StartsWith("postgresql://") == true)
+{
+    var uri = new Uri(connectionString);
+    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.Trim('/')};Username={uri.UserInfo.Split(':')[0]};Password={uri.UserInfo.Split(':')[1]};SSL Mode=Require;Trust Server Certificate=true";
+}
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+builder.Services.AddScoped<PdfService>();
+
+// CORS CORRIGIDO - ORDEM IMPORTA!
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", corsBuilder =>
+    options.AddPolicy("AllowAll", policy =>
     {
-        corsBuilder
-            .WithOrigins("https://funipro.shop", "http://localhost:3000")
-            .AllowAnyMethod()
-            .AllowAnyHeader();
-            // Remova .AllowCredentials() se não estiver usando autenticação por cookie!
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
     });
 });
 
-// Configure Database
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
 var app = builder.Build();
 
-// 🟢 Aplicar migrações automaticamente ao iniciar
+// Aplicar migrations automaticamente
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Erro ao aplicar migrations: {ex.Message}");
+    }
 }
 
-// Configure the HTTP request pipeline
+// IMPORTANTE: UseCors ANTES de UseAuthorization!
+app.UseCors("AllowAll");
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// UseCors deve vir antes de UseAuthorization
-app.UseCors("AllowAll");
-
-app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 
