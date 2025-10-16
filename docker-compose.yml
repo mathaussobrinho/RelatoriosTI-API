@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # Serviço da sua API .NET
+  api:
+    build:
+      context: ./RelatoriosTI.API # Caminho para a pasta que contém o Dockerfile
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      # Mapeia a porta 8080 da VPS para a porta 80 do contêiner da API
+      # Você pode escolher outra porta externa, como 5000:80
+      - "8080:80"
+    environment:
+      # AQUI ESTÁ A MÁGICA!
+      # Passamos a string de conexão como variável de ambiente.
+      # O 'Host=db' funciona porque o Docker Compose cria uma rede interna
+      # onde o serviço 'api' pode encontrar o serviço 'db' pelo nome.
+      - DATABASE_URL=Host=db;Port=5432;Database=sua_database;Username=seu_usuario;Password=sua_senha_forte
+      # Define o ambiente como Produção
+      - ASPNETCORE_ENVIRONMENT=Production
+    depends_on:
+      - db # Garante que o banco de dados inicie antes da API
+
+  # Serviço do Banco de Dados PostgreSQL
+  db:
+    image: postgres:15 # Usa a imagem oficial do PostgreSQL
+    restart: always
+    environment:
+      # Essas variáveis criam o banco de dados e o usuário na primeira vez que o contêiner sobe
+      - POSTGRES_DB=sua_database
+      - POSTGRES_USER=seu_usuario
+      - POSTGRES_PASSWORD=sua_senha_forte
+    ports:
+      # Opcional: Se você quiser acessar o banco de dados de fora da VPS (ex: com DBeaver)
+      # Mapeia a porta 5433 da VPS para a porta 5432 do contêiner do banco
+      - "5433:5432"
+    volumes:
+      # ESSENCIAL! Isso garante que os dados do seu banco não sejam perdidos
+      # quando o contêiner for reiniciado ou recriado.
+      - postgres_data:/var/lib/postgresql/data
+
+# Define um volume nomeado para persistir os dados
+volumes:
+  postgres_data:
