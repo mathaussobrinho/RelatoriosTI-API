@@ -21,7 +21,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("https://funipro.shop", "https://www.funipro.shop")
+        policy.WithOrigins("https://funipro.shop","localhost", "https://www.funipro.shop")
               .AllowAnyMethod()
               .AllowAnyHeader();
               // Se precisar usar cookies: .AllowCredentials();
