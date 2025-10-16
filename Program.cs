@@ -5,17 +5,30 @@ using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configurar porta
+// Configurar porta (Railway)
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 QuestPDF.Settings.License = LicenseType.Community;
 
+// Controllers, Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Connection String
+// ========= 🔐 CORS ==========
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("https://funipro.shop")
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+              // Se usar cookies: .AllowCredentials();
+    });
+});
+
+// ========= 💾 Banco de Dados ==========
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
     ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
@@ -37,24 +50,10 @@ var app = builder.Build();
 
 Console.WriteLine("Aplicação iniciada!");
 
-// ===== MIDDLEWARE CORS MANUAL - DEVE VIR PRIMEIRO =====
-app.Use(async (context, next) =>
-{
-    context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
-    context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    
-    if (context.Request.Method == "OPTIONS")
-    {
-        context.Response.StatusCode = 200;
-        await context.Response.CompleteAsync();
-        return;
-    }
-    
-    await next();
-});
+// ========= 🌐 CORS ==========
+app.UseCors("AllowFrontend");
 
-// Aplicar migrations
+// ========= 🧠 Aplicar migrations ==========
 Console.WriteLine("Aplicando migrations...");
 using (var scope = app.Services.CreateScope())
 {
@@ -70,9 +69,15 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-app.UseSwagger();
-app.UseSwaggerUI();
+// ========= 🧪 Swagger ==========
+if (app.Environment.IsDevelopment() || true) // deixa sempre ligado
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
+// ========= 🚀 Pipeline ==========
+app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 
@@ -81,5 +86,4 @@ app.MapGet("/", () => "API está rodando! Acesse /swagger");
 app.MapGet("/health", () => "OK");
 
 Console.WriteLine($"Servidor rodando na porta {port}");
-
 app.Run();
