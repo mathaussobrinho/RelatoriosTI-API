@@ -21,10 +21,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("https://funipro.shop")
+        policy.WithOrigins("https://funipro.shop", "https://www.funipro.shop")
               .AllowAnyMethod()
               .AllowAnyHeader();
-              // Se usar cookies: .AllowCredentials();
+              // Se precisar usar cookies: .AllowCredentials();
     });
 });
 
@@ -50,8 +50,25 @@ var app = builder.Build();
 
 Console.WriteLine("Aplicação iniciada!");
 
+// ========= 🧪 Swagger ==========
+if (app.Environment.IsDevelopment() || true)
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
 // ========= 🌐 CORS ==========
 app.UseCors("AllowFrontend");
+
+// ========= 🚀 Pipeline ==========
+/*
+ * Desabilitei temporariamente para evitar conflitos de redirect no preflight CORS.
+ * Depois de tudo funcionando, você pode reativar se quiser.
+ */
+// app.UseHttpsRedirection();
+
+app.UseAuthorization();
+app.MapControllers();
 
 // ========= 🧠 Aplicar migrations ==========
 Console.WriteLine("Aplicando migrations...");
@@ -68,18 +85,6 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine($"Erro ao aplicar migrations: {ex.Message}");
     }
 }
-
-// ========= 🧪 Swagger ==========
-if (app.Environment.IsDevelopment() || true) // deixa sempre ligado
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-// ========= 🚀 Pipeline ==========
-app.UseHttpsRedirection();
-app.UseAuthorization();
-app.MapControllers();
 
 // Health check
 app.MapGet("/", () => "API está rodando! Acesse /swagger");
