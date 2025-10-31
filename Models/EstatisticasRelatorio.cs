@@ -6,7 +6,10 @@ public class EstatisticasRelatorio
     public List<ChamadoPorAnalista> ChamadosPorAnalista { get; set; } = new();
     public List<ChamadoPorTipo> ChamadosPorTipo { get; set; } = new();
     public List<ChamadoPorLocal> ChamadosPorLocal { get; set; } = new();
+    public List<ChamadoPorAssunto> ChamadosPorAssunto { get; set; } = new();
     public double TempoMedioResolucao { get; set; }
+    public double TempoMedioSLA { get; set; }
+    public int TotalComSLA { get; set; }
     public int TotalChamados { get; set; }
 }
 
@@ -32,5 +35,11 @@ public class ChamadoPorTipo
 public class ChamadoPorLocal
 {
     public string Local { get; set; } = string.Empty;
+    public int Quantidade { get; set; }
+}
+
+public class ChamadoPorAssunto
+{
+    public string Assunto { get; set; } = string.Empty;
     public int Quantidade { get; set; }
 }

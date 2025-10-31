@@ -19,10 +19,13 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
     {
-        var usuario = await _context.Usuarios
-            .FirstOrDefaultAsync(u => u.Email == request.Email && u.Senha == request.Senha);
+        if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Senha))
+            return BadRequest(new { message = "Email e senha são obrigatórios" });
 
-        if (usuario == null)
+        var usuario = await _context.Usuarios
+            .FirstOrDefaultAsync(u => u.Email == request.Email);
+
+        if (usuario == null || !BCrypt.Net.BCrypt.Verify(request.Senha, usuario.Senha))
             return Unauthorized(new { message = "Email ou senha incorretos" });
 
         return Ok(new LoginResponse
@@ -37,14 +40,25 @@ public class AuthController : ControllerBase
     [HttpPost("usuarios")]
     public async Task<ActionResult<Usuario>> CriarUsuario([FromBody] Usuario usuario)
     {
+        if (string.IsNullOrWhiteSpace(usuario.Email))
+            return BadRequest(new { message = "Email é obrigatório" });
+
+        if (string.IsNullOrWhiteSpace(usuario.Senha) || usuario.Senha.Length < 6)
+            return BadRequest(new { message = "Senha deve ter no mínimo 6 caracteres" });
+
         var existe = await _context.Usuarios.AnyAsync(u => u.Email == usuario.Email);
         if (existe)
             return BadRequest(new { message = "Email já cadastrado" });
 
-        usuario.DataCriacao = DateTime.Now;
+        // Hash da senha antes de salvar
+        usuario.Senha = BCrypt.Net.BCrypt.HashPassword(usuario.Senha);
+        usuario.DataCriacao = DateTime.UtcNow;
+        
         _context.Usuarios.Add(usuario);
         await _context.SaveChangesAsync();
 
+        // Não retornar a senha (mesmo que seja hash)
+        usuario.Senha = string.Empty;
         return Ok(usuario);
     }
 
@@ -52,6 +66,13 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<List<Usuario>>> ObterUsuarios()
     {
         var usuarios = await _context.Usuarios.ToListAsync();
+        
+        // Remover senhas da resposta
+        foreach (var usuario in usuarios)
+        {
+            usuario.Senha = string.Empty;
+        }
+        
         return Ok(usuarios);
     }
 
@@ -62,12 +83,33 @@ public class AuthController : ControllerBase
         if (usuarioExistente == null)
             return NotFound();
 
+        if (string.IsNullOrWhiteSpace(usuario.Email))
+            return BadRequest(new { message = "Email é obrigatório" });
+
+        // Verificar se outro usuário já usa esse email
+        var emailEmUso = await _context.Usuarios
+            .AnyAsync(u => u.Email == usuario.Email && u.Id != id);
+        if (emailEmUso)
+            return BadRequest(new { message = "Email já está em uso por outro usuário" });
+
         usuarioExistente.Email = usuario.Email;
-        usuarioExistente.Senha = usuario.Senha;
+        
+        // Se uma nova senha foi fornecida, fazer hash
+        if (!string.IsNullOrWhiteSpace(usuario.Senha))
+        {
+            if (usuario.Senha.Length < 6)
+                return BadRequest(new { message = "Senha deve ter no mínimo 6 caracteres" });
+            
+            usuarioExistente.Senha = BCrypt.Net.BCrypt.HashPassword(usuario.Senha);
+        }
+        
         usuarioExistente.EhAdministrador = usuario.EhAdministrador;
         usuarioExistente.HoteisPermitidos = usuario.HoteisPermitidos;
 
         await _context.SaveChangesAsync();
+        
+        // Não retornar a senha
+        usuarioExistente.Senha = string.Empty;
         return Ok(usuarioExistente);
     }
 

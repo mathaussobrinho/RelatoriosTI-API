@@ -14,4 +14,7 @@ public class Ticket
     public string StatusTicket { get; set; } = string.Empty;
     public string EmailSolicitante { get; set; } = string.Empty;
     public string Assunto { get; set; } = string.Empty;
+    public string Setor { get; set; } = string.Empty; // DESCRIÇÃO DO SETOR
+    public string TempoSLA { get; set; } = string.Empty; // TEMPO GASTO SLA SOLUÇÃO
+    public string NomeOperador { get; set; } = string.Empty; // NOME DO OPERADOR
 }

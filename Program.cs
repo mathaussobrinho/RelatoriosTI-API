@@ -5,9 +5,9 @@ using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configurar porta (Railway)
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+// Configurar porta local
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+builder.WebHost.UseUrls($"http://localhost:{port}");
 
 QuestPDF.Settings.License = LicenseType.Community;
 
@@ -21,28 +21,27 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("https://funipro.shop","localhost", "https://www.funipro.shop")
+        // Permitir localhost e 127.0.0.1 para desenvolvimento local
+        policy.WithOrigins(
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:5173"
+              )
               .AllowAnyMethod()
-              .AllowAnyHeader();
-              // Se precisar usar cookies: .AllowCredentials();
+              .AllowAnyHeader()
+              .SetPreflightMaxAge(TimeSpan.FromSeconds(3600));
     });
 });
 
 // ========= 💾 Banco de Dados ==========
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
-    ?? builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? "Data Source=RelatoriosTI.db";
 
-Console.WriteLine("Configurando banco de dados...");
-
-if (connectionString?.StartsWith("postgresql://") == true)
-{
-    var uri = new Uri(connectionString);
-    var userInfo = uri.UserInfo.Split(':');
-    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.Trim('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
-}
+Console.WriteLine("Configurando banco de dados SQLite...");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseSqlite(connectionString));
 
 builder.Services.AddScoped<PdfService>();
 
@@ -51,13 +50,12 @@ var app = builder.Build();
 Console.WriteLine("Aplicação iniciada!");
 
 // ========= 🧪 Swagger ==========
-if (app.Environment.IsDevelopment() || true)
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Swagger sempre habilitado para facilitar testes locais
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // ========= 🌐 CORS ==========
+// IMPORTANTE: CORS deve vir ANTES de UseAuthorization e MapControllers
 app.UseCors("AllowFrontend");
 
 // ========= 🚀 Pipeline ==========

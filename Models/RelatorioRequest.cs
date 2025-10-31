@@ -12,5 +12,11 @@ public class RelatorioRequest
     public string? OutrosContratos { get; set; }
     public List<Ticket> Tickets { get; set; } = new();
     public string MelhoriasProximoMes { get; set; } = string.Empty;
+    public string MelhoriasFeitas { get; set; } = string.Empty;
+    public bool MelhoriasFeitasConfirmado { get; set; } = false;
+    public string ResumoMes { get; set; } = string.Empty;
+    public int QtdMaquinasTotal { get; set; } = 0;
+    public int QtdMaquinasPreventivasFeitas { get; set; } = 0;
+    public string MotivoPreventivasIncompletas { get; set; } = string.Empty;
     public int CriadoPorUsuarioId { get; set; }
 }

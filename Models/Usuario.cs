@@ -7,5 +7,5 @@ public class Usuario
     public string Senha { get; set; } = string.Empty;
     public bool EhAdministrador { get; set; }
     public List<string> HoteisPermitidos { get; set; } = new();
-    public DateTime DataCriacao { get; set; } = DateTime.Now;
+    public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
 }

@@ -20,6 +20,19 @@ public class DadosRelatorio
     public List<Ticket> Tickets { get; set; } = new();
     public string? CaminhoArquivoPdf { get; set; }
     public string MelhoriasProximoMes { get; set; } = string.Empty;
+    public string MelhoriasFeitas { get; set; } = string.Empty; // Melhorias que foram feitas
+    public bool MelhoriasFeitasConfirmado { get; set; } = false; // Se as melhorias foram confirmadas como feitas
+    public string ResumoMes { get; set; } = string.Empty; // Resumo de tudo que foi feito no mês
+    
+    // Preventivas detalhadas
+    public int QtdMaquinasTotal { get; set; } = 0;
+    public int QtdMaquinasPreventivasFeitas { get; set; } = 0;
+    public string MotivoPreventivasIncompletas { get; set; } = string.Empty;
+    
+    // Assinatura/OK do relatório
+    public string AssinaturaUsuarioNome { get; set; } = string.Empty;
+    public DateTime? DataAssinatura { get; set; }
+    public bool RelatorioAprovado { get; set; } = false;
     
     public int CriadoPorUsuarioId { get; set; }
     public Usuario? CriadoPor { get; set; } // Propriedade de navegação para EF Core

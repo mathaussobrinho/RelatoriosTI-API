@@ -3,7 +3,6 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using RelatoriosTI.API.Data;
 
 #nullable disable
@@ -16,66 +15,90 @@ namespace RelatoriosTI.API.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder
-                .HasDefaultSchema("public")
-                .HasAnnotation("ProductVersion", "8.0.0")
-                .HasAnnotation("Relational:MaxIdentifierLength", 63);
-
-            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
 
             modelBuilder.Entity("RelatoriosTI.API.Models.DadosRelatorio", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("INTEGER");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    b.Property<string>("AssinaturaUsuarioNome")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("CaminhoArquivoPdf")
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("CriadoPorUsuarioId")
-                        .HasColumnType("integer");
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("DataAssinatura")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DataCriacao")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DataGeracao")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DataRenovacaoAntivirus")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DataRenovacaoOffice365")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("HotelNome")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MelhoriasFeitas")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("MelhoriasFeitasConfirmado")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("MelhoriasProximoMes")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MotivoPreventivasIncompletas")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("OutrosContratos")
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("QtdLicencasAntivirus")
-                        .HasColumnType("integer");
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("QtdLicencasOffice365Basic")
-                        .HasColumnType("integer");
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("QtdLicencasOffice365Standard")
-                        .HasColumnType("integer");
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("QtdMaquinasPreventivasFeitas")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("QtdMaquinasTotal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("RelatorioAprovado")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ResumoMes")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("StatusPreventivas")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Tickets")
                         .IsRequired()
-                        .HasColumnType("jsonb");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -85,41 +108,39 @@ namespace RelatoriosTI.API.Migrations
 
                     b.HasIndex("HotelNome");
 
-                    b.ToTable("Relatorios", "public");
+                    b.ToTable("Relatorios");
                 });
 
             modelBuilder.Entity("RelatoriosTI.API.Models.Usuario", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("DataCriacao")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("EhAdministrador")
-                        .HasColumnType("boolean");
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("HoteisPermitidos")
                         .IsRequired()
-                        .HasColumnType("jsonb");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Senha")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Usuarios", "public");
+                    b.ToTable("Usuarios");
 
                     b.HasData(
                         new
@@ -129,7 +150,7 @@ namespace RelatoriosTI.API.Migrations
                             EhAdministrador = true,
                             Email = "mathaus@admin",
                             HoteisPermitidos = "[]",
-                            Senha = "$2a$11$JSTxO/0C7YH34nJvss1xqOl.zwCvzLB9r9ajbI5wLAyz5LiY9Jp4y"
+                            Senha = "$2a$11$v2YsLtwHrb72xNnvQ4gzoOY527yzeM3XcOSRS.L018TXSHTUjTIGa"
                         });
                 });
 

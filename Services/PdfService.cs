@@ -87,6 +87,56 @@ namespace RelatoriosTI.API.Services
                                 });
                             });
 
+                            // Preventivas Detalhadas com Gráfico
+                            if (relatorio.QtdMaquinasTotal > 0)
+                            {
+                                col.Item().PageBreak();
+                                col.Item().Text("Status das Preventivas").Bold().FontSize(14);
+                                
+                                var percentualPreventivas = relatorio.QtdMaquinasTotal > 0
+                                    ? (double)relatorio.QtdMaquinasPreventivasFeitas / relatorio.QtdMaquinasTotal * 100
+                                    : 0;
+                                var maquinasPendentes = relatorio.QtdMaquinasTotal - relatorio.QtdMaquinasPreventivasFeitas;
+
+                                col.Item().Row(row =>
+                                {
+                                    row.RelativeItem().Padding(10).Column(c =>
+                                    {
+                                        c.Item().Text($"Total de Máquinas: {relatorio.QtdMaquinasTotal}").FontSize(10);
+                                        c.Item().Text($"Preventivas Feitas: {relatorio.QtdMaquinasPreventivasFeitas}")
+                                            .FontSize(10).FontColor(Colors.Green.Medium);
+                                        c.Item().Text($"Pendentes: {maquinasPendentes}")
+                                            .FontSize(10).FontColor(maquinasPendentes > 0 ? Colors.Red.Medium : Colors.Green.Medium);
+                                        c.Item().PaddingTop(5).Text($"{percentualPreventivas:F1}% Concluído")
+                                            .FontSize(16).Bold().FontColor(Colors.Blue.Medium);
+                                        
+                                        if (!string.IsNullOrEmpty(relatorio.MotivoPreventivasIncompletas))
+                                        {
+                                            c.Item().PaddingTop(5).Text("Motivo:").FontSize(9).Bold();
+                                            c.Item().Text(relatorio.MotivoPreventivasIncompletas)
+                                                .FontSize(9).FontColor(Colors.Grey.Darken1);
+                                        }
+                                    });
+
+                                    // Gráfico Pizza Simulado (legenda visual)
+                                    row.RelativeItem().Padding(10).Column(c =>
+                                    {
+                                        c.Item().Background(Colors.Blue.Lighten5).Border(1).BorderColor(Colors.Blue.Lighten2).Padding(10).Column(inner =>
+                                        {
+                                            inner.Item().AlignCenter().Text("Status das Preventivas").FontSize(10).Bold().FontColor(Colors.Blue.Darken1);
+                                            inner.Item().PaddingTop(5);
+                                            inner.Item().Text($"✓ {relatorio.QtdMaquinasPreventivasFeitas} Feitas ({percentualPreventivas:F1}%)")
+                                                .FontSize(10).FontColor(Colors.Green.Medium).Bold();
+                                            inner.Item().PaddingTop(3);
+                                            inner.Item().Text($"✗ {maquinasPendentes} Pendentes ({100 - percentualPreventivas:F1}%)")
+                                                .FontSize(10).FontColor(Colors.Red.Medium).Bold();
+                                            inner.Item().PaddingTop(5);
+                                            inner.Item().AlignCenter().Text($"{percentualPreventivas:F1}%").FontSize(24).Bold().FontColor(Colors.Blue.Medium);
+                                        });
+                                    });
+                                });
+                            }
+
                             // Estatísticas de Chamados
                             col.Item().Text("Resumo de Chamados").Bold().FontSize(14);
                             col.Item().Row(row =>
@@ -99,8 +149,9 @@ namespace RelatoriosTI.API.Services
                                 row.Spacing(5);
                                 row.RelativeItem().Background(Colors.Blue.Lighten4).Padding(10).AlignCenter().Column(c =>
                                 {
-                                    c.Item().Text("Tempo Médio (h)").FontSize(9);
-                                    c.Item().Text(stats.TempoMedioResolucao.ToString("0.0")).Bold().FontSize(20);
+                                    c.Item().Text("Estatísticas de SLA").FontSize(9);
+                                    c.Item().Text(stats.TempoMedioSLA.ToString("0.00")).Bold().FontSize(18);
+                                    c.Item().Text($"Total com SLA: {stats.TotalComSLA}").FontSize(8).FontColor(Colors.Grey.Darken1);
                                 });
                                 row.Spacing(5);
                                 row.RelativeItem().Background(Colors.Green.Lighten4).Padding(10).AlignCenter().Column(c =>
@@ -163,6 +214,34 @@ namespace RelatoriosTI.API.Services
                                 }
                             });
 
+                            // Ranking de Chamados por Assunto
+                            if (stats.ChamadosPorAssunto != null && stats.ChamadosPorAssunto.Any())
+                            {
+                                col.Item().PageBreak();
+                                col.Item().Text("Ranking de Chamados por Assunto").Bold().FontSize(14);
+                                col.Item().Table(table =>
+                                {
+                                    table.ColumnsDefinition(columns =>
+                                    {
+                                        columns.RelativeColumn(4);
+                                        columns.RelativeColumn(1);
+                                    });
+
+                                    table.Header(header =>
+                                    {
+                                        header.Cell().Background(Colors.Blue.Lighten2).Padding(5).Text("Assunto").Bold();
+                                        header.Cell().Background(Colors.Blue.Lighten2).Padding(5).Text("Qtd").Bold();
+                                    });
+
+                                    foreach (var item in stats.ChamadosPorAssunto)
+                                    {
+                                        var assuntoTexto = item.Assunto.Length > 60 ? item.Assunto.Substring(0, 57) + "..." : item.Assunto;
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(5).Text(assuntoTexto).FontSize(9);
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(5).AlignRight().Text(item.Quantidade.ToString()).Bold().FontSize(10);
+                                    }
+                                });
+                            }
+
                             // Chamados por Solicitante
                             col.Item().Text("Chamados por Solicitante").Bold().FontSize(14);
                             col.Item().Table(table =>
@@ -197,30 +276,47 @@ namespace RelatoriosTI.API.Services
                                 table.ColumnsDefinition(columns =>
                                 {
                                     columns.RelativeColumn(1);    // Ticket
-                                    columns.RelativeColumn(3);    // Assunto
-                                    columns.RelativeColumn(2);    // Solicitante
-                                    columns.RelativeColumn(2);    // Analista
+                                    columns.RelativeColumn(2);    // Assunto
+                                    columns.RelativeColumn(1.5f); // Solicitante
+                                    columns.RelativeColumn(1.5f); // Analista
+                                    columns.RelativeColumn(1);    // Setor
+                                    columns.RelativeColumn(1);    // SLA
                                     columns.RelativeColumn(1);    // Status
                                 });
 
                                 table.Header(header =>
                                 {
-                                    header.Cell().Background(Colors.Grey.Lighten2).Padding(3).Text("Ticket").Bold().FontSize(8);
-                                    header.Cell().Background(Colors.Grey.Lighten2).Padding(3).Text("Assunto").Bold().FontSize(8);
-                                    header.Cell().Background(Colors.Grey.Lighten2).Padding(3).Text("Solicitante").Bold().FontSize(8);
-                                    header.Cell().Background(Colors.Grey.Lighten2).Padding(3).Text("Analista").Bold().FontSize(8);
-                                    header.Cell().Background(Colors.Grey.Lighten2).Padding(3).Text("Status").Bold().FontSize(8);
+                                    header.Cell().Background(Colors.Grey.Lighten2).Padding(3).Text("Ticket").Bold().FontSize(7);
+                                    header.Cell().Background(Colors.Grey.Lighten2).Padding(3).Text("Assunto").Bold().FontSize(7);
+                                    header.Cell().Background(Colors.Grey.Lighten2).Padding(3).Text("Solicitante").Bold().FontSize(7);
+                                    header.Cell().Background(Colors.Grey.Lighten2).Padding(3).Text("Analista").Bold().FontSize(7);
+                                    header.Cell().Background(Colors.Grey.Lighten2).Padding(3).Text("Setor").Bold().FontSize(7);
+                                    header.Cell().Background(Colors.Grey.Lighten2).Padding(3).Text("SLA").Bold().FontSize(7);
+                                    header.Cell().Background(Colors.Grey.Lighten2).Padding(3).Text("Status").Bold().FontSize(7);
                                 });
 
                                 foreach (var ticket in relatorio.Tickets)
                                 {
-                                    table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(ticket.NumeroTicket).FontSize(8);
-                                    table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(ticket.Assunto ?? "Sem assunto").FontSize(7);
-                                    table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(ticket.Solicitante).FontSize(8);
-                                    table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(ticket.Analista).FontSize(8).FontColor(Colors.Blue.Medium);
-                                    table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(ticket.StatusTicket).FontSize(8);
+                                    table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(ticket.NumeroTicket).FontSize(7);
+                                    table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(3).Text((ticket.Assunto ?? "Sem assunto").Length > 30 ? (ticket.Assunto ?? "Sem assunto").Substring(0, 27) + "..." : (ticket.Assunto ?? "Sem assunto")).FontSize(7);
+                                    table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(ticket.Solicitante).FontSize(7);
+                                    table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(ticket.Analista).FontSize(7).FontColor(Colors.Blue.Medium);
+                                    table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(string.IsNullOrEmpty(ticket.Setor) || ticket.Setor == "Não possui" ? "-" : ticket.Setor).FontSize(7);
+                                    table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(string.IsNullOrEmpty(ticket.TempoSLA) || ticket.TempoSLA == "Não possui" ? "-" : ticket.TempoSLA).FontSize(7);
+                                    table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(ticket.StatusTicket).FontSize(7);
                                 }
                             });
+
+                            // Melhorias Feitas
+                            if (!string.IsNullOrEmpty(relatorio.MelhoriasFeitas))
+                            {
+                                col.Item().PageBreak();
+                                col.Item().Text("Melhorias Feitas").Bold().FontSize(14);
+                                col.Item().Background(Colors.Green.Lighten4).Border(1).BorderColor(Colors.Green.Lighten2).Padding(10).Column(c =>
+                                {
+                                    c.Item().Text(relatorio.MelhoriasFeitas).FontSize(10);
+                                });
+                            }
 
                             // Melhorias para o Próximo Mês
                             if (!string.IsNullOrEmpty(relatorio.MelhoriasProximoMes))
@@ -228,6 +324,30 @@ namespace RelatoriosTI.API.Services
                                 col.Item().PageBreak();
                                 col.Item().Text("Melhorias Planejadas para o Próximo Mês").Bold().FontSize(14);
                                 col.Item().Background(Colors.Grey.Lighten4).Padding(10).Text(relatorio.MelhoriasProximoMes).FontSize(10);
+                            }
+
+                            // Resumo do Mês
+                            if (!string.IsNullOrEmpty(relatorio.ResumoMes))
+                            {
+                                col.Item().PageBreak();
+                                col.Item().Text("Resumo do Mês").Bold().FontSize(14);
+                                col.Item().Background(Colors.Grey.Lighten4).Padding(10).Text(relatorio.ResumoMes).FontSize(10);
+                            }
+
+                            // Assinatura/Aprovação
+                            if (relatorio.RelatorioAprovado)
+                            {
+                                col.Item().PageBreak();
+                                col.Item().Text("Aprovação do Relatório").Bold().FontSize(14);
+                                col.Item().Background(Colors.Green.Lighten4).Border(1).BorderColor(Colors.Green.Lighten2).Padding(15).Column(c =>
+                                {
+                                    c.Item().Text("✓ Relatório Aprovado").FontSize(12).Bold().FontColor(Colors.Green.Darken1);
+                                    c.Item().PaddingTop(5).Text($"Por: {relatorio.AssinaturaUsuarioNome}").FontSize(10);
+                                    if (relatorio.DataAssinatura.HasValue)
+                                    {
+                                        c.Item().Text($"Data: {relatorio.DataAssinatura.Value:dd/MM/yyyy HH:mm}").FontSize(10).FontColor(Colors.Grey.Darken1);
+                                    }
+                                });
                             }
                         });
 
